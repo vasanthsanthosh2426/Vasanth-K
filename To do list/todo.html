@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Professional To-Do List | Web App</title>
+
+  <style>
+    /* ===== GLOBAL STYLES ===== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-size: cover;
+      background-position: center;
+      transition: background-image 0.5s ease-in-out;
+      overflow: hidden;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 0;
+    }
+
+    /* ===== CONTAINER ===== */
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 420px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 30px 25px 40px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #333;
+      font-size: 26px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ===== INPUT SECTION ===== */
+    .input-group {
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    .input-group input {
+      flex: 1;
+      padding: 12px 15px;
+      font-size: 15px;
+      border: 2px solid #ccc;
+      border-radius: 8px 0 0 8px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .input-group input:focus {
+      border-color: #0078ff;
+    }
+
+    .input-group button {
+      background-color: #0078ff;
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 0 8px 8px 0;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background-color 0.3s;
+    }
+
+    .input-group button:hover {
+      background-color: #005fcc;
+    }
+
+    /* ===== TASK LIST ===== */
+    ul {
+      list-style: none;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+
+    ul::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ul::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f8f8;
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      transition: background 0.3s;
+    }
+
+    li:hover {
+      background: #f1f1f1;
+    }
+
+    li.completed span {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .task-text {
+      flex: 1;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .delete-btn {
+      background-color: #e74c3c;
+      border: none;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background-color 0.3s;
+    }
+
+    .delete-btn:hover {
+      background-color: #c0392b;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      text-align: center;
+      margin-top: 15px;
+      color: #555;
+      font-size: 13px;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="overlay"></div>
+
+  <div class="container">
+    <h1>📝 My To-Do List</h1>
+
+    <div class="input-group">
+      <input type="text" id="taskInput" placeholder="Add a new task..." />
+      <button id="addBtn">Add</button>
+    </div>
+
+    <ul id="taskList"></ul>
+
+    <footer>Made by You</footer>
+  </div>
+
+  <script>
+    // ===== RANDOM BACKGROUND IMAGES =====
+    const backgrounds = [
+      "https://source.unsplash.com/1600x900/?nature,forest",
+      "https://source.unsplash.com/1600x900/?city,night",
+      "https://source.unsplash.com/1600x900/?mountains",
+      "https://source.unsplash.com/1600x900/?beach",
+      "https://source.unsplash.com/1600x900/?sky,clouds",
+      "https://source.unsplash.com/1600x900/?workspace,office"
+    ];
+    document.body.style.backgroundImage =
+      `url('${backgrounds[Math.floor(Math.random() * backgrounds.length)]}')`;
+
+    // ===== DOM ELEMENTS =====
+    const input = document.getElementById("taskInput");
+    const addBtn = document.getElementById("addBtn");
+    const taskList = document.getElementById("taskList");
+
+    // ===== LOAD TASKS FROM LOCAL STORAGE =====
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    renderTasks();
+
+    // ===== EVENT LISTENERS =====
+    addBtn.addEventListener("click", addTask);
+    input.addEventListener("keypress", e => {
+      if (e.key === "Enter") addTask();
+    });
+
+    // ===== FUNCTIONS =====
+    function addTask() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      const task = { text, completed: false };
+      tasks.push(task);
+      saveTasks();
+      renderTasks();
+      input.value = "";
+    }
+
+    function renderTasks() {
+      taskList.innerHTML = "";
+      tasks.forEach((task, index) => {
+        const li = document.createElement("li");
+        if (task.completed) li.classList.add("completed");
+
+        const span = document.createElement("span");
+        span.textContent = task.text;
+        span.classList.add("task-text");
+        span.onclick = () => toggleComplete(index);
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.classList.add("delete-btn");
+        delBtn.onclick = () => deleteTask(index);
+
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        taskList.appendChild(li);
+      });
+    }
+
+    function toggleComplete(index) {
+      tasks[index].completed = !tasks[index].completed;
+      saveTasks();
+      renderTasks();
+    }
+
+    function deleteTask(index) {
+      tasks.splice(index, 1);
+      saveTasks();
+      renderTasks();
+    }
+
+    function saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+  </script>
+</body>
+</html>
